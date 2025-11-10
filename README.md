@@ -1,6 +1,59 @@
-# Getting Started with Create React App
+# Weather Report  🌤️
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## The Problem
+Weather information is often dull or confusing, making it hard for people to decide what to wear or stay informed about health and safety.
+
+## The Solution
+Our weather app is a modern, interactive weather application that transforms complex weather data into actionable insights. Our app provides:
+
+- **Visual Weather Experience**: Beautiful animations and intuitive icons that bring weather to life
+- **Personalized Recommendations**: Get outfit suggestions and activity recommendations based on current and forecasted conditions
+- **Comprehensive Forecasts**: Detailed hourly and 7-day forecasts with all the metrics you need
+- **Health & Safety Insights**: UV index, air quality, and precipitation probabilities to help you plan your day safely
+- **Smart Presentation**: Clean, easy-to-understand interface that presents weather data in a way that's actually useful
+
+## Tech Stack
+
+- **React 19.2.0** - Modern React with hooks for state management
+- **OpenWeatherMap API** - Real-time weather data and forecasts
+- **CSS3** - Custom animations and responsive design
+- **Create React App** - Fast development setup and build optimization
+
+## Setup
+
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+- OpenWeatherMap API key ([Get one free here](https://openweathermap.org/api))
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/slumpshouse/Weather-Report-nya.git
+   cd Weather-Report-nya
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up your API key**
+   
+   Create a `.env` file in the project root:
+   ```bash
+   REACT_APP_WEATHER_KEY=your_api_key_here
+   ```
+
+4. **Start the development server**
+   ```bash
+   npm start
+   ```
+   
+   The app will open at [http://localhost:3000](http://localhost:3000)
+
+---
 
 ## Available Scripts
 

@@ -1,41 +1,55 @@
+// Brings in React and some helpful tools to make our app work
 import React, { useState, useEffect } from 'react';
+// Brings in the styling to make everything look nice
 import './App.css';
 
+// This is the main weather app
 const WeatherApp = () => {
+  // Keeps track of which screen you're looking at
   const [currentPage, setCurrentPage] = useState('main');
+  // Remembers which hour you clicked on
   const [selectedHour, setSelectedHour] = useState(null);
+  // Remembers which day you clicked on
   const [selectedDay, setSelectedDay] = useState(null);
+  // Holds all the current weather info
   const [weatherInfo, setWeatherInfo] = useState(null);
+  // Holds the next 24 hours of weather
   const [hourlyData, setHourlyData] = useState([]);
+  // Holds the next 7 days of weather
   const [dailyData, setDailyData] = useState([]);
+  // Shows a loading spinner while we get the weather
   const [loading, setLoading] = useState(true);
+  // Shows an error message if something goes wrong
   const [error, setError] = useState('');
+  // The city we're checking weather for (starts with Philadelphia)
   const [city, setCity] = useState('Philadelphia');
 
+  // Turns weather codes from the API into emoji (like turning "01d" into ☀️)
   const getIconFromCode = (code) => {
     const mapping = {
-      '01d': '☀️',
-      '01n': '🌙',
-      '02d': '🌤️',
-      '02n': '☁️',
-      '03d': '⛅',
-      '03n': '☁️',
-      '04d': '☁️',
-      '04n': '☁️',
-      '09d': '🌧️',
-      '09n': '🌧️',
-      '10d': '🌦️',
-      '10n': '🌧️',
-      '11d': '⛈️',
-      '11n': '⛈️',
-      '13d': '❄️',
-      '13n': '❄️',
-      '50d': '🌫️',
-      '50n': '🌫️'
+      '01d': '☀️', // sunny
+      '01n': '🌙', // clear night
+      '02d': '🌤️', // partly sunny
+      '02n': '☁️', // cloudy night
+      '03d': '⛅', // some clouds
+      '03n': '☁️', // cloudy night
+      '04d': '☁️', // cloudy
+      '04n': '☁️', // cloudy night
+      '09d': '🌧️', // rainy
+      '09n': '🌧️', // rainy night
+      '10d': '🌦️', // rain and sun
+      '10n': '🌧️', // rainy night
+      '11d': '⛈️', // stormy
+      '11n': '⛈️', // stormy night
+      '13d': '❄️', // snowy
+      '13n': '❄️', // snowy night
+      '50d': '🌫️', // foggy
+      '50n': '🌫️'  // foggy night
     };
-    return mapping[code] || '⛅';
+    return mapping[code] || '⛅'; // if we don't recognize the code, just show partly cloudy
   };
 
+  // Makes text look nicer by capitalizing words 
   const formatText = (text) => {
     if (!text) return '';
     return text
@@ -44,14 +58,17 @@ const WeatherApp = () => {
       .join(' ');
   };
 
+  // Takes a timestamp and converts it to a readable time like "3:45 PM" (adjusts for the city's timezone)
   const formatWithOffset = (timestamp, offset, options = { hour: 'numeric', minute: '2-digit' }) => {
     if (timestamp === undefined || timestamp === null) return '--';
     const adjusted = new Date((timestamp + (offset || 0)) * 1000);
     return adjusted.toLocaleTimeString('en-US', { timeZone: 'UTC', ...options });
   };
 
+  // Turns a timestamp into just the hour (like "3 PM")
   const formatHour = (timestamp, offset) => formatWithOffset(timestamp, offset, { hour: 'numeric' });
 
+  // Turns a timestamp into a day name (like "Monday"), but the first day always says "Today"
   const formatDay = (timestamp, offset, index) => {
     if (index === 0) return 'Today';
     if (timestamp === undefined || timestamp === null) return '--';
@@ -59,6 +76,7 @@ const WeatherApp = () => {
     return adjusted.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'long' });
   };
 
+  // Creates those floating circles in the background when the page loads
   useEffect(() => {
     const particlesContainer = document.getElementById('particles');
     if (particlesContainer) {
@@ -74,9 +92,9 @@ const WeatherApp = () => {
         particlesContainer.appendChild(particle);
       }
     }
-  }, []);
+  }, []); // only runs once when the app starts
 
-  // Fetch weather for a given city (declared as function so it can be called from the UI)
+  // Gets the weather data  for whatever city you search
   async function fetchWeather(cityToFetch = city) {
     const apiKey = process.env.REACT_APP_WEATHER_KEY;
     if (!apiKey) {
@@ -88,16 +106,19 @@ const WeatherApp = () => {
     try {
       setLoading(true);
       setError('');
+      // Ask OpenWeatherMap for the current weather in the city
       const currentResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityToFetch)}&units=imperial&appid=${apiKey}`);
       if (!currentResponse.ok) {
         throw new Error('current');
       }
       const currentJson = await currentResponse.json();
+      // Pull out all the weather info from what the API sends back
       const { coord = {}, name, sys = {}, timezone: currentOffset = 0, weather = [], main = {}, wind = {}, visibility } = currentJson;
       const { lat, lon } = coord;
-      let offset = currentOffset || 0;
-      let hourly = [];
-      let daily = [];
+      let offset = currentOffset || 0; // timezone difference
+      let hourly = []; // will hold hourly forecast
+      let daily = []; // will hold daily forecast
+      // Grab all the current weather details
       let currentIconCode = weather?.[0]?.icon;
       let currentDesc = weather?.[0]?.description;
       let tempValue = main?.temp;
@@ -112,14 +133,17 @@ const WeatherApp = () => {
       let lowValue = main?.temp_min;
       let uvValue = null;
 
+      // If we got coordinates, we can get more detailed forecasts
       if (lat !== undefined && lon !== undefined) {
         try {
+          // Get hourly forecast using the coordinates
           const oneCallResponse = await fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,daily,alerts&units=imperial&appid=${apiKey}`);
           if (oneCallResponse.ok) {
             const oneCallJson = await oneCallResponse.json();
             offset = oneCallJson.timezone_offset !== undefined && oneCallJson.timezone_offset !== null ? oneCallJson.timezone_offset : offset;
             const hourlyEntries = Array.isArray(oneCallJson.hourly) ? oneCallJson.hourly.slice(0, 24) : [];
             if (hourlyEntries.length) {
+              // Turn each hour's data into a nice easy-to-use format
               hourly = hourlyEntries.map((entry, index) => ({
                 time: formatHour(entry.dt, offset),
                 icon: getIconFromCode(entry.weather?.[0]?.icon),
@@ -133,6 +157,7 @@ const WeatherApp = () => {
                 visibility: entry.visibility !== undefined && entry.visibility !== null ? `${Math.round((entry.visibility / 1609.34) * 10) / 10} mi` : '--',
                 index
               }));
+              // Also grab the UV index for right now
               const currentUv = oneCallJson.current?.uvi;
               if (currentUv !== undefined && currentUv !== null) {
                 uvValue = Math.round(currentUv * 10) / 10;
@@ -146,12 +171,14 @@ const WeatherApp = () => {
         }
 
         try {
+          // Get the 5-day forecast to show daily highs and lows
           const forecastResponse = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=imperial&appid=${apiKey}`);
           if (forecastResponse.ok) {
             const forecastJson = await forecastResponse.json();
             offset = forecastJson.city && forecastJson.city.timezone !== undefined && forecastJson.city.timezone !== null ? forecastJson.city.timezone : offset;
             const list = forecastJson.list || [];
 
+            // If we didn't get hourly data before, use the forecast data
             if (!hourly.length) {
               hourly = list.slice(0, 24).map((entry, index) => ({
                 time: formatHour(entry.dt, offset),
@@ -168,17 +195,20 @@ const WeatherApp = () => {
               }));
             }
 
+            // Group the forecast by day to find the highest and lowest temps each day
             const daysMap = {};
             list.forEach((entry) => {
               const dayKey = new Date((entry.dt + (offset || 0)) * 1000).toISOString().slice(0, 10);
               if (!daysMap[dayKey]) {
                 daysMap[dayKey] = { high: entry.main.temp_max, low: entry.main.temp_min, icon: entry.weather?.[0]?.icon, desc: entry.weather?.[0]?.description };
               } else {
+                // Keep track of the highest high and lowest low for each day
                 daysMap[dayKey].high = Math.max(daysMap[dayKey].high, entry.main.temp_max);
                 daysMap[dayKey].low = Math.min(daysMap[dayKey].low, entry.main.temp_min);
               }
             });
             const dayKeys = Object.keys(daysMap).slice(0, 7);
+            // Turn each day into a nice format for the app to use
             daily = dayKeys.map((dayKey, index) => {
               const d = daysMap[dayKey];
               return {
@@ -199,9 +229,11 @@ const WeatherApp = () => {
         }
       }
 
+      // Convert visibility from meters to miles and pressure to inches
       const visibilityMiles = visibilityValue !== undefined && visibilityValue !== null ? Math.round((visibilityValue / 1609.34) * 10) / 10 : null;
       const pressureInHg = pressureValue !== undefined && pressureValue !== null ? Math.round(pressureValue * 0.02953 * 10) / 10 : null;
 
+      // Save all the weather info so the app can use it
       setWeatherInfo({
         city: name && sys?.country ? `${name}, ${sys.country}` : name || 'Unknown',
         icon: getIconFromCode(currentIconCode),
@@ -228,20 +260,22 @@ const WeatherApp = () => {
   }
 
   useEffect(() => {
-    // initial load
+    // Gets the weather when you first open the app
     fetchWeather(city);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Creates cool animations based on the weather (rain drops, sun rays, etc.)
   const WeatherAnimation = ({ icon, containerId }) => {
     useEffect(() => {
       const container = document.getElementById(containerId);
       if (!container) return;
       
-      container.innerHTML = '';
+      container.innerHTML = ''; // clear out any old animations
       
+      // Different animations for different weather
       switch(icon) {
-        case '🌧️':
+        case '🌧️': // rainy weather - make falling raindrops
           for (let i = 0; i < 50; i++) {
             const drop = document.createElement('div');
             drop.className = 'rain-drop';
@@ -251,7 +285,7 @@ const WeatherApp = () => {
             container.appendChild(drop);
           }
           break;
-        case '⛈️':
+        case '⛈️': // stormy weather - more rain plus lightning
           for (let i = 0; i < 60; i++) {
             const drop = document.createElement('div');
             drop.className = 'rain-drop';
@@ -261,10 +295,10 @@ const WeatherApp = () => {
             container.appendChild(drop);
           }
           const lightning = document.createElement('div');
-          lightning.className = 'lightning';
+          lightning.className = 'lightning'; // add lightning effect
           container.appendChild(lightning);
           break;
-        case '☀️':
+        case '☀️': // sunny weather - create sun rays
           const sunRays = document.createElement('div');
           sunRays.className = 'sun-rays';
           for (let i = 0; i < 12; i++) {
@@ -275,7 +309,7 @@ const WeatherApp = () => {
           }
           container.appendChild(sunRays);
           break;
-        case '⛅':
+        case '⛅': // cloudy weather - create floating clouds
         case '🌤️':
         case '🌥️':
           for (let i = 0; i < 3; i++) {
@@ -295,9 +329,11 @@ const WeatherApp = () => {
     return <div id={containerId} className="weather-animation"></div>;
   };
 
+  // The main home screen with current weather and forecasts
   const MainPage = () => {
-    if (!weatherInfo) return null;
+    if (!weatherInfo) return null; // don't show anything if we don't have weather data yet
 
+    // Get values for the progress bars
     const humidityPercent = weatherInfo.humidity !== undefined && weatherInfo.humidity !== null ? weatherInfo.humidity : null;
     const uvValue = weatherInfo.uvIndex !== undefined && weatherInfo.uvIndex !== null ? weatherInfo.uvIndex : null;
     const uvPercent = uvValue !== null ? (Math.min(uvValue, 11) / 11) * 100 : 0;
@@ -474,9 +510,11 @@ const WeatherApp = () => {
     );
   };
 
+  // Shows details when you click on a specific hour
   const HourlyDetailPage = () => {
-    if (!selectedHour) return null;
+    if (!selectedHour) return null; // go back if somehow no hour is selected
 
+    // Get all the details for this hour (with fallbacks if data is missing)
     const feelsLike = selectedHour.feelsLike !== undefined && selectedHour.feelsLike !== null ? selectedHour.feelsLike : selectedHour.temp;
     const humidity = selectedHour.humidity !== undefined && selectedHour.humidity !== null ? selectedHour.humidity : null;
     const wind = selectedHour.wind !== undefined && selectedHour.wind !== null ? selectedHour.wind : null;
@@ -487,6 +525,7 @@ const WeatherApp = () => {
         ? weatherInfo.uvIndex
         : null;
     const visibility = selectedHour.visibility || weatherInfo?.visibility || '--';
+    // Show a few hours before and after the selected hour for context
     const timelineItems = [selectedHour.index - 1, selectedHour.index, selectedHour.index + 1, selectedHour.index + 2]
       .map((idx) => hourlyData[idx])
       .filter(Boolean);
@@ -579,11 +618,13 @@ const WeatherApp = () => {
     );
   };
 
+  // Shows details when you click on a specific day
   const DayDetailPage = () => {
-    if (!selectedDay) return null;
+    if (!selectedDay) return null; // go back if somehow no day is selected
 
     const descriptionText = selectedDay.desc || '';
 
+    // Figures out what clothes to suggest based on the weather
     const getOutfitRecommendations = () => {
       const { desc, high, low } = selectedDay;
       
@@ -648,6 +689,7 @@ const WeatherApp = () => {
       }
     };
 
+    // Suggests fun activities based on the weather
     const getActivities = () => {
       const { desc, high } = selectedDay;
       
@@ -692,13 +734,16 @@ const WeatherApp = () => {
     const { outfits, tips } = getOutfitRecommendations();
     const activities = getActivities();
 
+    // Estimate rain chance if we don't have exact data
     const precipChance = selectedDay.precipitation !== undefined && selectedDay.precipitation !== null
       ? `${selectedDay.precipitation}%`
       : descriptionText.includes('Rain') ? '80%' : descriptionText.includes('Thunderstorm') ? '90%' : descriptionText.includes('Sunny') ? '5%' : '20%';
+    // Estimate UV index if we don't have exact data
     const uvIndex = selectedDay.uvIndex !== undefined && selectedDay.uvIndex !== null
       ? selectedDay.uvIndex
       : descriptionText.includes('Sunny') ? '7' : '4';
     const windValue = selectedDay.wind !== undefined && selectedDay.wind !== null ? `${selectedDay.wind} mph` : '8-12 mph';
+    // Create helpful descriptions based on the numbers
     const uvNumeric = typeof uvIndex === 'number' ? uvIndex : Number(uvIndex);
     const uvDescription = Number.isFinite(uvNumeric)
       ? uvNumeric >= 6
@@ -813,6 +858,7 @@ const WeatherApp = () => {
     );
   };
 
+  // Shows all 24 hours at once when you click "View All" on hourly forecast
   const FullHourlyPage = () => {
     return (
       <div className="detail-page">
@@ -847,6 +893,7 @@ const WeatherApp = () => {
     );
   };
 
+  // Shows all 7 days at once when you click "View All" on daily forecast
   const FullDailyPage = () => {
     return (
       <div className="day-detail-page">
@@ -874,15 +921,13 @@ const WeatherApp = () => {
     );
   };
 
+  // The main display - shows different pages based on what you're looking at
   return (
     <>
       <div id="particles"></div>
 
-
-
-      <div id="particles"></div>
-
       <div className="container">
+        {/* Show loading spinner while getting weather */}
         {loading && (
           <div className="loading-overlay">
             <div className="loading-card">
@@ -891,11 +936,13 @@ const WeatherApp = () => {
             </div>
           </div>
         )}
+        {/* Show error message if something went wrong */}
         {!loading && error && (
           <div className="card" style={{ textAlign: 'center', color: 'white', padding: '60px 30px' }}>
             {error}
           </div>
         )}
+        {/* Show the right page based on what screen you're on */}
         {!loading && !error && currentPage === 'main' && <MainPage />}
         {!loading && !error && currentPage === 'hourly-detail' && <HourlyDetailPage />}
         {!loading && !error && currentPage === 'day-detail' && <DayDetailPage />}

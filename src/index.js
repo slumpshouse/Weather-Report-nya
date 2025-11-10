@@ -4,7 +4,9 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Find the spot in the HTML where we'll put our app (the div with id="root")
 const root = ReactDOM.createRoot(document.getElementById('root'));
+// Put our weather app on the page
 root.render(
   <React.StrictMode>
     <App />
