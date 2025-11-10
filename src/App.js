@@ -262,7 +262,7 @@ const WeatherApp = () => {
   useEffect(() => {
     // Gets the weather when you first open the app
     fetchWeather(city);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Creates cool animations based on the weather (rain drops, sun rays, etc.)
